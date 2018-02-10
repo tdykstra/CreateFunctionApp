@@ -67,7 +67,7 @@
             },
             {
               "name": "FUNCTIONS_EXTENSION_VERSION",
-              "value": "~1"
+              "value": "[parameters('siteVersion')]"
             },
             {
               "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
