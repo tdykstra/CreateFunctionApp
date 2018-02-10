@@ -1,0 +1,87 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "siteNameSuffix": {
+      "type": "string",
+      "defaultValue": "p1"
+    },
+    "siteVersion": {
+      "type": "string",
+      "defaultValue": "~1"
+    }
+  },
+  "resources": [
+    {
+      "type": "microsoft.insights/components",
+      "kind": "web",
+      "name": "[variables('siteName')]",
+      "apiVersion": "2014-04-01",
+      "location": "westus2",
+      "tags": {
+      },
+      "scale": null,
+      "properties": {
+        "ApplicationId": "[variables('siteName')]"
+      },
+      "dependsOn": []
+    },
+    {
+      "apiVersion": "2017-10-01",
+      "type": "Microsoft.Storage/storageAccounts",
+      "kind": "StorageV2",
+      "name": "[variables('storageAccountName')]",
+      "location": "[variables('siteLocation')]",
+      "sku": {
+        "name": "Standard_LRS",
+        "tier": "Standard"
+      }
+    },
+    {
+      "apiVersion": "2016-08-01",
+      "type": "Microsoft.Web/sites",
+      "kind": "functionapp",
+      "name": "[variables('siteName')]",
+      "location": "[variables('siteLocation')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+      ],
+      "properties": {
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "AzureWebJobsDashboard",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTSHARE",
+              "value": "[toLower(variables('siteName'))]"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~1"
+            },
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[reference(resourceId('microsoft.insights/components', variables('siteName')),'2014-04-01').InstrumentationKey]"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "variables": {
+    "siteName": "[concat(resourceGroup().name,parameters('siteNameSuffix'))]",
+    "siteLocation": "[resourceGroup().location]",
+    "storageAccountName": "[toLower(concat(resourceGroup().name,parameters('siteNameSuffix')))]",
+    "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+  }
+}
